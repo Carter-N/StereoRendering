@@ -1,49 +1,99 @@
-/** @namespace */
-var THREEx	= THREEx 		|| {};
-
-THREEx.DeviceOrientationState	= function()
-{
-	// to store the current state
-	this._state	= { x: 0, y: 0, z: 0 };
-
-	this._$callback	= function(event){ this._onDeviceOrientation(event); }.bind(this);
-	
-	// bind events
-	// - spec http://dev.w3.org/geo/api/spec-source-orientation.html
-	window.addEventListener('deviceorientation', this._$callback);
-}
-
 /**
- * To stop listening of the keyboard events
-*/
-THREEx.DeviceOrientationState.prototype.destroy	= function()
-{
-	// unbind events
-	window.removeEventListener('deviceorientation', this._$callback);
-}
+ * @author richt / http://richt.me
+ * @author WestLangley / http://github.com/WestLangley
+ *
+ * W3C Device Orientation control (http://w3c.github.io/deviceorientation/spec-source-orientation.html)
+ */
 
-/**
- * to process the keyboard dom event
-*/
-THREEx.DeviceOrientationState.prototype._onDeviceOrientation	= function(event)
-{
-	this._state.x	= (!event.alpha ? 0 : event.alpha) * Math.PI / 180;
-	this._state.y	= (!event.beta  ? 0 : event.beta ) * Math.PI / 180;
-	this._state.z	= (!event.gamma ? 0 : event.gamma) * Math.PI / 180;
-}
+THREE.DeviceOrientationControls = function ( object ) {
 
+	var scope = this;
 
-THREEx.DeviceOrientationState.prototype.angleX	= function()
-{
-	return this._state.x;
-}
+	this.object = object;
+	this.object.rotation.reorder( "YXZ" );
 
-THREEx.DeviceOrientationState.prototype.angleY	= function()
-{
-	return this._state.y;
-}
+	this.enabled = true;
 
-THREEx.DeviceOrientationState.prototype.angleZ	= function()
-{
-	return this._state.z;
-}
+	this.deviceOrientation = {};
+	this.screenOrientation = 0;
+
+	var onDeviceOrientationChangeEvent = function ( event ) {
+
+		scope.deviceOrientation = event;
+
+	};
+
+	var onScreenOrientationChangeEvent = function () {
+
+		scope.screenOrientation = window.orientation || 0;
+
+	};
+
+	// The angles alpha, beta and gamma form a set of intrinsic Tait-Bryan angles of type Z-X'-Y''
+
+	var setObjectQuaternion = function () {
+
+		var zee = new THREE.Vector3( 0, 0, 1 );
+
+		var euler = new THREE.Euler();
+
+		var q0 = new THREE.Quaternion();
+
+		var q1 = new THREE.Quaternion( - Math.sqrt( 0.5 ), 0, 0, Math.sqrt( 0.5 ) ); // - PI/2 around the x-axis
+
+		return function ( quaternion, alpha, beta, gamma, orient ) {
+
+			euler.set( beta, alpha, - gamma, 'YXZ' );                       // 'ZXY' for the device, but 'YXZ' for us
+
+			quaternion.setFromEuler( euler );                               // orient the device
+
+			quaternion.multiply( q1 );                                      // camera looks out the back of the device, not the top
+
+			quaternion.multiply( q0.setFromAxisAngle( zee, - orient ) );    // adjust for screen orientation
+
+		}
+
+	}();
+
+	this.connect = function() {
+
+		onScreenOrientationChangeEvent(); // run once on load
+
+		window.addEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
+		window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
+
+		scope.enabled = true;
+
+	};
+
+	this.disconnect = function() {
+
+		window.removeEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
+		window.removeEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
+
+		scope.enabled = false;
+
+	};
+
+	this.update = function () {
+
+		if ( scope.enabled === false ) return;
+
+		var alpha  = scope.deviceOrientation.alpha ? THREE.Math.degToRad( scope.deviceOrientation.alpha ) : 0; // Z
+		var beta   = scope.deviceOrientation.beta  ? THREE.Math.degToRad( scope.deviceOrientation.beta  ) : 0; // X'
+		var gamma  = scope.deviceOrientation.gamma ? THREE.Math.degToRad( scope.deviceOrientation.gamma ) : 0; // Y''
+		var orient = scope.screenOrientation       ? THREE.Math.degToRad( scope.screenOrientation       ) : 0; // O
+
+		setObjectQuaternion( scope.object.quaternion, alpha, beta, gamma, orient );
+
+	};
+
+	this.dispose = function () {
+
+		this.disconnect();
+
+	};
+
+	this.connect();
+
+};

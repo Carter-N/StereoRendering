@@ -1,2 +1,29 @@
-body { margin: 0px; }
-canvas { margin: 0px; background-color: #d3d3d3; }
+/* Default body margin workaround */
+body{ 
+	margin: 0px; 
+}
+
+/* Canvas clear color */
+canvas{ 
+	margin: 0px; background-color: #d3d3d3; 
+}
+
+/* Index page button styling */
+button{
+	width: 100%;
+	height: 50%;
+	font-size: 100px;
+	background-color: #d3d3d3;
+}
+
+/* Player crosshair */
+#crosshair{
+	position: absolute;
+	width: 10px;
+	height: 10px;
+	z-index: 1001;
+	border-style: solid;
+	border-radius: 90px;
+	border-width: 2px;
+	border-color: green;
+}

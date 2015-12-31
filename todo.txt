@@ -1,0 +1,11 @@
+-Collision with pillars
+-Server side map size set
+-Score keeping
+-3d sound
+-Collision with edge of map
+-Direction indicator on player
+-Cleanup networking code
+-Cleanup and modularize scripts
+-Death message and game reset
+
+///GOOD LEVEL SIZE = 160///

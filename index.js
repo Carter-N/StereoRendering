@@ -1,4 +1,4 @@
-//Express instance
+//Express application
 var express = require("express");
 var app = express();
 
@@ -8,10 +8,14 @@ var http = require("http").Server(app);
 //Socket server
 var io = require("socket.io")(http);
 
+//Level size
+var levelSize = process.argv[2];
+console.log("Building level of size: " + levelSize);
+
 //Static directories
 app.use(express.static("public"));
 
-//Index page
+//Index page for player
 app.get("/", function(req, res){
 	res.sendFile("public/index.html", {root : __dirname});
 });
@@ -21,9 +25,18 @@ app.get("/placer", function(req, res){
 	res.sendFile("public/placer.html", {root : __dirname});
 });
 
+//Player page
+app.get("/player", function(req, res){
+	res.sendFile("public/player.html", {root : __dirname});
+});
+
 //User connection established
 io.on("connection", function(socket){
-	console.log("User connection established");
+
+	//Send initial data to client
+	socket.emit("init", {
+		levelSize: levelSize
+	});
 
 	//Player position update
 	socket.on("position", function(data){
@@ -32,12 +45,11 @@ io.on("connection", function(socket){
 
 	//Bomb was placed
 	socket.on("bomb", function(data){
-		console.log("Bomb placed!");
 		io.emit("bomb", data);
 	});	
 });
 
 //Start server
-http.listen(80, function(){
-	console.log("Server listening on *:3000");
+http.listen(80, "192.168.1.152", function(){
+	console.log("Server listening...");
 });
